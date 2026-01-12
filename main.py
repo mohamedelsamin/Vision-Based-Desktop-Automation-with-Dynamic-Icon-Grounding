@@ -11,7 +11,7 @@ import webbrowser
 import subprocess
 import urllib.request
 import urllib.error
-from botcity.core import DesktopBot
+import mss
 
 
 # CONSTANTS  
@@ -20,7 +20,7 @@ ICON_PATH = "notepad.png"
 OUTPUT_DIR = r"C:\Users\Mohamed\OneDrive\Desktop\tjm-project"
 ANNOTATED_DIR = os.path.join(OUTPUT_DIR, "annotated_screenshot")
 POSTS_API = "https://jsonplaceholder.typicode.com/posts"
-MAX_POSTS = 3
+MAX_POSTS = 1
 RETRY_ATTEMPTS = 3
 RETRY_DELAY = 1
 
@@ -326,16 +326,24 @@ def close_unexpected_popups(main_window_title):
 
 # NOTEPAD FUNCTIONS 
 
-def open_notepad(bot: DesktopBot, screenshot_index=0, scales=[0.5, 0.75, 1.0, 1.25, 1.5, 2.0], threshold=0.5):
+def open_notepad(screenshot_index=0, scales=[0.5, 0.75, 1.0, 1.25, 1.5, 2.0], threshold=0.5):
 
     # Minimize all windows
-    bot.type_keys(["win", "d"])
+    pyautogui.hotkey('win', 'd')
     time.sleep(1)
 
-    # Take a desktop screenshot
-    screenshot_path = os.path.join(ANNOTATED_DIR, f"annotated_screenshot_{screenshot_index}.png")
-    bot.screenshot(screenshot_path)
-    desktop_color = cv2.imread(screenshot_path)
+    # Take a desktop screenshot using mss
+    screenshot_path = os.path.join(ANNOTATED_DIR, f"icon_detect{screenshot_index}.png")
+    with mss.mss() as sct:
+        # Get the primary monitor
+        monitor = sct.monitors[1]
+        screenshot = sct.grab(monitor)
+        # Convert to numpy array and save
+        img = np.array(screenshot)
+        # mss returns BGRA, convert to BGR for OpenCV
+        desktop_color = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+        cv2.imwrite(screenshot_path, desktop_color)
+    
     desktop_gray = cv2.cvtColor(desktop_color, cv2.COLOR_BGR2GRAY)
 
     # Edge detection to highlight desktop icons
@@ -367,7 +375,7 @@ def open_notepad(bot: DesktopBot, screenshot_index=0, scales=[0.5, 0.75, 1.0, 1.
 
             center_x = x + w // 2
             center_y = y + h // 2
-            bot.mouse_move(center_x, center_y)
+            pyautogui.moveTo(center_x, center_y)
             pyautogui.doubleClick()
             print(f"Notepad icon found and opened at ({center_x}, {center_y})")
             target_found = True
@@ -448,7 +456,6 @@ def fallback_open_notepad_via_search(main_window_title="Untitled - Notepad"):
 # MAIN EXECUTION 
 
 if __name__ == "__main__":
-    bot = DesktopBot()
     main_window_title = "Untitled - Notepad"
 
     # Step 1: Fetch posts from API
@@ -465,7 +472,7 @@ if __name__ == "__main__":
         # Attempt to open Notepad
         success = False
         for attempt in range(RETRY_ATTEMPTS):
-            if open_notepad(bot, screenshot_index=idx):
+            if open_notepad(screenshot_index=idx):
                 notepad_window = wait_for_notepad()
                 if notepad_window:
                     success = True
