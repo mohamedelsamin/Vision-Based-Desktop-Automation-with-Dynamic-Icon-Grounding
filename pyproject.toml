@@ -8,7 +8,7 @@ authors = [
     {name = "Mohamed", email = ""}
 ]
 license = {text = "MIT"}
-keywords = ["automation", "desktop", "notepad", "api", "botcity"]
+keywords = ["automation", "desktop", "notepad", "api", "pyautogui"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -31,7 +31,6 @@ dependencies = [
     "pygetwindow>=0.0.9",
     "requests>=2.31.0",
     "pyperclip>=1.8.2",
-    "botcity-framework-core>=0.1.0",
     "urllib3>=2.0.0",
 ]
 
