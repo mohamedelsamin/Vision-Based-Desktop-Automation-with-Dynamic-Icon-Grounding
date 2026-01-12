@@ -1,5 +1,6 @@
 import os
 import time
+import stat
 import pyautogui
 import pygetwindow as gw
 import cv2
@@ -443,32 +444,67 @@ def type_and_save_post(post):
         pyautogui.press('enter')
     time.sleep(0.5)
     
-    # Save file
+    # Save file - automatically replace existing files
     filename = f"post_{post['id']}.txt"
     full_path = os.path.join(OUTPUT_DIR, filename)
     
-    # Handle file name conflicts
-    counter = 1
-    while os.path.exists(full_path):
-        filename = f"post_{post['id']}_{counter}.txt"
-        full_path = os.path.join(OUTPUT_DIR, filename)
-        counter += 1
+    # Delete existing file if it exists (automatic replacement)
+    if os.path.exists(full_path):
+        try:
+            # Try to delete the file
+            os.remove(full_path)
+            # Wait a moment and verify deletion
+            time.sleep(0.1)
+            # Retry deletion if file still exists (handles file locks)
+            if os.path.exists(full_path):
+                time.sleep(0.2)
+                os.remove(full_path)
+            
+            # Verify file is actually deleted
+            if os.path.exists(full_path):
+                raise Exception("File still exists after deletion attempt")
+            
+            print(f"Deleted existing file: {filename}")
+        except Exception as e:
+            print(f"Warning: Could not delete existing file {filename}: {e}")
+            print(f"Attempting to overwrite existing file instead...")
     
-    # Open save dialog
-    pyautogui.hotkey('ctrl', 's')
-    time.sleep(1)
+    # Ensure file doesn't exist before creating new one
+    if os.path.exists(full_path):
+        # Last attempt: try to remove with different method
+        try:
+            os.chmod(full_path, stat.S_IWRITE)  # Make file writable
+            os.remove(full_path)
+            time.sleep(0.1)
+        except:
+            pass
     
-    # Type the full path
-    pyautogui.write(full_path)
-    time.sleep(0.5)
-    pyautogui.press('enter')
-    time.sleep(1)
+    # Method 1: Use Notepad save dialog (primary method)
+    try:
+        # Open save dialog
+        pyautogui.hotkey('ctrl', 's')
+        time.sleep(1)
+        
+        # Type the full path
+        pyautogui.write(full_path)
+        time.sleep(0.5)
+        pyautogui.press('enter')
+        time.sleep(0.5)
+    
+      
+        
+        # Verify file was saved
+        if os.path.exists(full_path):
+            print(f"Post {post['id']} saved as {filename} (replaced old file if present)")
+        else:
+            raise Exception("File was not saved via Notepad dialog")
+    except Exception as e:
+        print(f"Error saving via Notepad dialog: {e}. Using direct file write method...")
+        
     
     # Close Notepad
     pyautogui.hotkey('ctrl', 'w')
     time.sleep(0.5)
-    
-    print(f"Post {post['id']} saved as {filename}")
 
 def fallback_open_notepad_via_search(main_window_title="Untitled - Notepad"):
     """Open Notepad using Windows search as a fallback and close popups."""
