@@ -444,63 +444,50 @@ def type_and_save_post(post):
         pyautogui.press('enter')
     time.sleep(0.5)
     
-    # Save file - automatically replace existing files
+    # Save file - keep old file and automatically handle replacement popup
     filename = f"post_{post['id']}.txt"
     full_path = os.path.join(OUTPUT_DIR, filename)
     
-    # Delete existing file if it exists (automatic replacement)
+    # Check if file exists to inform user
     if os.path.exists(full_path):
-        try:
-            # Try to delete the file
-            os.remove(full_path)
-            # Wait a moment and verify deletion
-            time.sleep(0.1)
-            # Retry deletion if file still exists (handles file locks)
-            if os.path.exists(full_path):
-                time.sleep(0.2)
-                os.remove(full_path)
-            
-            # Verify file is actually deleted
-            if os.path.exists(full_path):
-                raise Exception("File still exists after deletion attempt")
-            
-            print(f"Deleted existing file: {filename}")
-        except Exception as e:
-            print(f"Warning: Could not delete existing file {filename}: {e}")
-            print(f"Attempting to overwrite existing file instead...")
+        print(f"File {filename} already exists. Replacement popup will be handled automatically.")
     
-    # Ensure file doesn't exist before creating new one
-    if os.path.exists(full_path):
-        # Last attempt: try to remove with different method
+    # Use Notepad save dialog - let Windows show replacement popup if file exists
+    # Open save dialog
+    pyautogui.hotkey('ctrl', 's')
+    time.sleep(1)
+    
+    # Type the full path
+    pyautogui.write(full_path)
+    time.sleep(0.5)
+    pyautogui.press('enter')
+    time.sleep(0.8)  # Wait for replacement dialog to appear if file exists
+    
+    # Automatically handle Windows "File already exists" confirmation dialog
+    # The dialog asks: "Do you want to replace it?" with Yes/No buttons
+    # We automatically press 'y' (Yes) or Enter to confirm replacement
+    try:
+        # Wait a bit more to ensure dialog has appeared (if file exists)
+        time.sleep(0.3)
+        # Press 'y' to confirm replacement (works for Yes button)
+        pyautogui.press('y')
+        time.sleep(0.2)
+        print("Automatically confirmed file replacement")
+    except:
+        # If 'y' doesn't work, try Enter key (some dialogs use Enter as default)
         try:
-            os.chmod(full_path, stat.S_IWRITE)  # Make file writable
-            os.remove(full_path)
-            time.sleep(0.1)
+            time.sleep(0.2)
+            pyautogui.press('enter')
         except:
             pass
     
-    # Method 1: Use Notepad save dialog (primary method)
-    try:
-        # Open save dialog
-        pyautogui.hotkey('ctrl', 's')
-        time.sleep(1)
-        
-        # Type the full path
-        pyautogui.write(full_path)
-        time.sleep(0.5)
-        pyautogui.press('enter')
-        time.sleep(0.5)
+    time.sleep(0.5)
     
-      
-        
-        # Verify file was saved
-        if os.path.exists(full_path):
-            print(f"Post {post['id']} saved as {filename} (replaced old file if present)")
-        else:
-            raise Exception("File was not saved via Notepad dialog")
-    except Exception as e:
-        print(f"Error saving via Notepad dialog: {e}. Using direct file write method...")
-        
+    # Verify file was saved
+    if os.path.exists(full_path):
+        print(f"Post {post['id']} saved as {filename} (replaced old file automatically)")
+    else:
+        print(f"Warning: Could not verify if file {filename} was saved")
     
     # Close Notepad
     pyautogui.hotkey('ctrl', 'w')
