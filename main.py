@@ -14,20 +14,16 @@ import urllib.error
 import mss
 
 
-# CONSTANTS  
-
-ICON_PATH = "notepad.png" 
-OUTPUT_DIR = r"C:\Users\Mohamed\OneDrive\Desktop\tjm-project"
-ANNOTATED_DIR = os.path.join(OUTPUT_DIR, "annotated_screenshot")
-POSTS_API = "https://jsonplaceholder.typicode.com/posts"
-MAX_POSTS = 1
-RETRY_ATTEMPTS = 3
-RETRY_DELAY = 1
-
-
-# Create required directories
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(ANNOTATED_DIR, exist_ok=True)
+# Import configuration constants
+from config import (
+    ICON_PATH,
+    OUTPUT_DIR,
+    ANNOTATED_DIR,
+    POSTS_API,
+    MAX_POSTS,
+    RETRY_ATTEMPTS,
+    RETRY_DELAY
+)
 
 # UTILITY FUNCTIONS 
 
