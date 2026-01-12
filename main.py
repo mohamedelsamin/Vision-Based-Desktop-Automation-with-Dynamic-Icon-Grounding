@@ -112,21 +112,54 @@ def fetch_posts_via_default_browser():
         
         if not data or not data.strip().startswith('['):
             print(f"Error: Clipboard doesn't contain JSON. Content: {data[:200]}...")
-            pyautogui.hotkey('alt', 'f4')  # Close browser
+            # Minimize browser instead of closing
+            try:
+                chrome_windows = gw.getWindowsWithTitle("Chrome")
+                if chrome_windows:
+                    chrome_windows[0].minimize()
+                    print("Browser minimized.")
+            except:
+                pyautogui.hotkey('win', 'down')  # Alternative minimize method
             return []
         
         posts = json.loads(data)
         print(f"Successfully fetched {len(posts)} posts from default browser.")
         
-        # Close browser
-        pyautogui.hotkey('alt', 'f4')
-        time.sleep(1)
+        # Minimize browser instead of closing
+        try:
+            # Try to find Chrome window by title
+            chrome_windows = gw.getWindowsWithTitle("Chrome")
+            if not chrome_windows:
+                # Try alternative browser names
+                chrome_windows = gw.getWindowsWithTitle("Google Chrome")
+            if not chrome_windows:
+                chrome_windows = gw.getWindowsWithTitle("chromium")
+            
+            if chrome_windows:
+                chrome_windows[0].minimize()
+                print("Browser minimized successfully.")
+            else:
+                # Fallback: Use keyboard shortcut to minimize
+                pyautogui.hotkey('win', 'down')
+                print("Browser minimized using keyboard shortcut.")
+        except Exception as e:
+            print(f"Could not minimize browser: {e}. Using keyboard shortcut.")
+            pyautogui.hotkey('win', 'down')  # Alternative minimize method
+        
+        time.sleep(0.5)
         
         return posts[:MAX_POSTS]
     except Exception as e:
         print(f"Error fetching from default browser: {e}")
         try:
-            pyautogui.hotkey('alt', 'f4')
+            # Minimize browser instead of closing
+            chrome_windows = gw.getWindowsWithTitle("Chrome")
+            if not chrome_windows:
+                chrome_windows = gw.getWindowsWithTitle("Google Chrome")
+            if chrome_windows:
+                chrome_windows[0].minimize()
+            else:
+                pyautogui.hotkey('win', 'down')
         except:
             pass
         return []
