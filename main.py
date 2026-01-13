@@ -26,55 +26,6 @@ from config import (
     RETRY_DELAY
 )
 
-# UTILITY FUNCTIONS 
-
-
-def fetch_posts_urllib():
-    """Fetch posts using urllib (built-in, no external dependencies)."""
-    print("Attempting to fetch posts using urllib...")
-    try:
-        req = urllib.request.Request(
-            POSTS_API,
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        )
-        with urllib.request.urlopen(req, timeout=15) as response:
-            data = response.read().decode('utf-8')
-            posts = json.loads(data)[:MAX_POSTS]
-            print(f"Successfully fetched {len(posts)} posts using urllib.")
-            return posts
-    except urllib.error.URLError as e:
-        print(f"Error with urllib: {e}")
-        return []
-    except Exception as e:
-        print(f"Error fetching with urllib: {e}")
-        return []
-
-def fetch_posts_requests_improved():
-    """Fetch posts using requests with improved error handling and SSL options."""
-    print("Attempting to fetch posts using requests (improved method)...")
-    try:
-        import ssl
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        
-        session = requests.Session()
-        session.verify = False  # Disable SSL verification if needed
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json',
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive'
-        }
-        
-        response = session.get(POSTS_API, headers=headers, timeout=20, allow_redirects=True)
-        response.raise_for_status()
-        posts = response.json()[:MAX_POSTS]
-        print(f"Successfully fetched {len(posts)} posts using requests (improved).")
-        return posts
-    except Exception as e:
-        print(f"Error with improved requests method: {e}")
-        return []
 
 def fetch_posts_via_default_browser():
     """Open the API URL in default browser and copy JSON from clipboard."""
@@ -165,177 +116,51 @@ def fetch_posts_via_default_browser():
             pass
         return []
 
-def fetch_posts_via_edge():
-    """Fetch posts by opening Microsoft Edge and copying the JSON response."""
-    print("Opening Microsoft Edge to fetch posts from API...")
-    try:
-        # Clear clipboard first
-        pyperclip.copy("")
-        
-        # Open Edge via Windows search
-        pyautogui.hotkey('win')
-        time.sleep(1.5)
-        pyautogui.write('edge')
-        time.sleep(0.8)
-        pyautogui.press('enter')
-        time.sleep(5)
-        
-        # Navigate to the API URL
-        pyautogui.hotkey('ctrl', 'l')
-        time.sleep(1.5)
-        pyautogui.write(POSTS_API)
-        time.sleep(0.8)
-        pyautogui.press('enter')
-        time.sleep(8)
-        
-        # Click and copy
-        pyautogui.click(400, 300)
-        time.sleep(1)
-        pyautogui.hotkey('ctrl', 'a')
-        time.sleep(1.5)
-        pyautogui.hotkey('ctrl', 'c')
-        time.sleep(3)
-        
-        data = pyperclip.paste()
-        
-        if not data or not data.strip().startswith('['):
-            print("Retrying...")
-            time.sleep(2)
-            pyautogui.click(400, 300)
-            time.sleep(1)
-            pyautogui.hotkey('ctrl', 'a')
-            time.sleep(1.5)
-            pyautogui.hotkey('ctrl', 'c')
-            time.sleep(3)
-            data = pyperclip.paste()
-        
-        if not data or not data.strip().startswith('['):
-            print(f"Error: Clipboard doesn't contain JSON.")
-            pyautogui.hotkey('ctrl', 'w')
-            return []
-        
-        posts = json.loads(data)
-        print(f"Successfully fetched {len(posts)} posts from Edge.")
-        
-        pyautogui.hotkey('ctrl', 'w')
-        time.sleep(1)
-        
-        return posts[:MAX_POSTS]
-    except Exception as e:
-        print(f"Error fetching from Edge: {e}")
-        try:
-            pyautogui.hotkey('ctrl', 'w')
-        except:
-            pass
-        return []
-
-def fetch_posts_via_subprocess():
-    """Open the API URL using subprocess (Windows start command)."""
-    print("Opening API URL using subprocess...")
-    try:
-        # Clear clipboard
-        pyperclip.copy("")
-        
-        # Open URL using Windows start command
-        subprocess.Popen(['start', POSTS_API], shell=True)
-        time.sleep(6)
-        
-        # Copy JSON from browser
-        pyautogui.click(400, 300)
-        time.sleep(1)
-        pyautogui.hotkey('ctrl', 'a')
-        time.sleep(1.5)
-        pyautogui.hotkey('ctrl', 'c')
-        time.sleep(3)
-        
-        data = pyperclip.paste()
-        
-        if not data or not data.strip().startswith('['):
-            print("Retrying clipboard copy...")
-            time.sleep(1)
-            pyautogui.click(400, 300)
-            time.sleep(1)
-            pyautogui.hotkey('ctrl', 'a')
-            time.sleep(1.5)
-            pyautogui.hotkey('ctrl', 'c')
-            time.sleep(3)
-            data = pyperclip.paste()
-        
-        if not data or not data.strip().startswith('['):
-            print(f"Error: Clipboard doesn't contain JSON.")
-            pyautogui.hotkey('alt', 'f4')
-            return []
-        
-        posts = json.loads(data)
-        print(f"Successfully fetched {len(posts)} posts via subprocess.")
-        
-        pyautogui.hotkey('alt', 'f4')
-        time.sleep(1)
-        
-        return posts[:MAX_POSTS]
-    except Exception as e:
-        print(f"Error with subprocess method: {e}")
-        try:
-            pyautogui.hotkey('alt', 'f4')
-        except:
-            pass
-        return []
 
 def fetch_posts():
-    """Fetch the first 10 posts from the API with multiple fallback methods."""
+    """Fetch posts from the API - try to open/fetch link directly, fallback to browser method."""
     print("=" * 60)
-    print("Fetching posts from API - trying multiple methods...")
+    print("Fetching posts from API...")
     print("=" * 60)
     
-    # Method 1: Try requests library (original)
+    # Method 1: Try to open/fetch link directly using requests library
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
+    
+    print("\n[Attempt 1] Trying to open/fetch link directly...")
     for attempt in range(2):
         try:
-            print(f"\n[Method 1] Attempting requests library (attempt {attempt + 1}/2)...")
+            print(f"  Attempt {attempt + 1}/2...")
             response = requests.get(POSTS_API, headers=headers, timeout=15, verify=False)
             response.raise_for_status()
             posts = response.json()[:MAX_POSTS]
-            print(f"[SUCCESS] Fetched {len(posts)} posts using requests library.")
+            print(f"[SUCCESS] Successfully opened link and fetched {len(posts)} posts.")
             return posts
         except requests.exceptions.RequestException as e:
-            print(f"[FAILED] Requests library error: {e}")
+            print(f"  [FAILED] Could not open/fetch link: {e}")
             if attempt < 1:
-                print("Retrying in 2 seconds...")
+                print("  Retrying in 2 seconds...")
                 time.sleep(2)
     
     # Method 2: Try improved requests method
-    print(f"\n[Method 2] Trying improved requests method...")
-    posts = fetch_posts_requests_improved()
-    if posts:
-        return posts
+    print("\n[Attempt 2] Trying improved requests method...")
+    try:
+        posts = fetch_posts_requests_improved()
+        if posts:
+            print(f"[SUCCESS] Successfully opened link using improved method.")
+            return posts
+    except Exception as e:
+        print(f"  [FAILED] Improved requests error: {e}")
     
-    # Method 3: Try urllib (built-in, no dependencies)
-    print(f"\n[Method 3] Trying urllib (built-in library)...")
-    posts = fetch_posts_urllib()
-    if posts:
-        return posts
-    
-    # Method 4: Try default browser
-    print(f"\n[Method 4] Trying default browser...")
+    # Fallback: Use browser method if direct link opening/fetching fails
+    print("\n[Fallback] Could not open/fetch link directly. Using browser method...")
+    print("=" * 60)
     posts = fetch_posts_via_default_browser()
     if posts:
         return posts
     
-    # Method 5: Try Microsoft Edge
-    print(f"\n[Method 5] Trying Microsoft Edge...")
-    posts = fetch_posts_via_edge()
-    if posts:
-        return posts
-    
-    # Method 6: Try subprocess
-    print(f"\n[Method 6] Trying subprocess method...")
-    posts = fetch_posts_via_subprocess()
-    if posts:
-        return posts
-    
-    print("\n[FAILED] All methods exhausted. Could not fetch posts.")
+    print("\n[FAILED] Could not fetch posts using any method.")
     return []
 
 def close_unexpected_popups(main_window_title):
