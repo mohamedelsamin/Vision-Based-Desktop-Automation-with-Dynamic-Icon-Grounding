@@ -494,11 +494,20 @@ def type_and_save_post(post):
     time.sleep(0.5)
 
 def fallback_open_notepad_via_search(main_window_title="Untitled - Notepad"):
-    """Open Notepad using Windows search as a fallback and close popups."""
-    print("Fallback: Opening Notepad via Windows search...")
-    pyautogui.hotkey('win')
-    pyautogui.write("Notepad")
+    """Open Notepad using Run dialog (Win+R) with Notepad path as a fallback."""
+    print("Fallback: Opening Notepad via Run dialog (Win+R)...")
+    
+    # Open Run dialog with Win+R
+    pyautogui.hotkey('win', 'r')
     time.sleep(0.5)
+    
+    # Type Notepad path - using the full path to notepad.exe
+    # Common paths: C:\Windows\System32\notepad.exe or just notepad.exe
+    notepad_path = "notepad.exe"
+    pyautogui.write(notepad_path)
+    time.sleep(0.5)
+    
+    # Press Enter to execute
     pyautogui.press('enter')
     time.sleep(1.5)  # wait for Notepad to open
 
