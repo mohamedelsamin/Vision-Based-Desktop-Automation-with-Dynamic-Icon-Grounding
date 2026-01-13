@@ -33,7 +33,7 @@ def fallback_fetch_posts_via_default_browser():
         pyautogui.click(400, 300)
         time.sleep(1)
 
-        for _ in range(2):  # محاولة واحدة إضافية فقط
+        for _ in range(2):    
             pyautogui.hotkey('ctrl', 'a')
             time.sleep(1)
             pyautogui.hotkey('ctrl', 'c')
@@ -313,3 +313,4 @@ if __name__ == "__main__":
         time.sleep(1)
     
     print(f"\nAll {len(posts)} posts processed successfully!")
+
