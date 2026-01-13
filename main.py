@@ -9,9 +9,6 @@ import requests
 import json
 import pyperclip
 import webbrowser
-import subprocess
-import urllib.request
-import urllib.error
 import mss
 
 
@@ -27,7 +24,7 @@ from config import (
 )
 
 
-def fetch_posts_via_default_browser():
+def fallback_fetch_posts_via_default_browser():
     """Open the API URL in default browser and copy JSON from clipboard."""
     print("Opening API URL in default browser...")
     try:
@@ -119,49 +116,18 @@ def fetch_posts_via_default_browser():
 
 def fetch_posts():
     """Fetch posts from the API - try to open/fetch link directly, fallback to browser method."""
-    print("=" * 60)
-    print("Fetching posts from API...")
-    print("=" * 60)
-    
-    # Method 1: Try to open/fetch link directly using requests library
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    }
-    
-    print("\n[Attempt 1] Trying to open/fetch link directly...")
-    for attempt in range(2):
-        try:
-            print(f"  Attempt {attempt + 1}/2...")
-            response = requests.get(POSTS_API, headers=headers, timeout=15, verify=False)
-            response.raise_for_status()
-            posts = response.json()[:MAX_POSTS]
-            print(f"[SUCCESS] Successfully opened link and fetched {len(posts)} posts.")
-            return posts
-        except requests.exceptions.RequestException as e:
-            print(f"  [FAILED] Could not open/fetch link: {e}")
-            if attempt < 1:
-                print("  Retrying in 2 seconds...")
-                time.sleep(2)
-    
-    # Method 2: Try improved requests method
-    print("\n[Attempt 2] Trying improved requests method...")
     try:
-        posts = fetch_posts_requests_improved()
+        response = requests.get(POSTS_API)
+        response.raise_for_status()
+        return response.json()[:MAX_POSTS]
+    except:
+        print("API unavailable, opening Chrome to fetch posts.")
+        print("=" * 60)
+        posts = fallback_fetch_posts_via_default_browser()
         if posts:
-            print(f"[SUCCESS] Successfully opened link using improved method.")
             return posts
-    except Exception as e:
-        print(f"  [FAILED] Improved requests error: {e}")
-    
-    # Fallback: Use browser method if direct link opening/fetching fails
-    print("\n[Fallback] Could not open/fetch link directly. Using browser method...")
-    print("=" * 60)
-    posts = fetch_posts_via_default_browser()
-    if posts:
-        return posts
-    
-    print("\n[FAILED] Could not fetch posts using any method.")
-    return []
+        print("\n[FAILED] Could not fetch posts using any method.")
+        return []
 
 def close_unexpected_popups(main_window_title):
     
