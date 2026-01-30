@@ -193,6 +193,29 @@ def wait_for_notepad(timeout=10):
         time.sleep(0.5)
     return None
 
+def check_replacement_dialog_appeared(timeout=1.5):
+    
+    start_time = time.time()
+    dialog_titles = [
+        "Confirm Save As",
+        "Save As",
+        "Confirm File Replace",
+        "File Already Exists"
+    ]
+    
+    while time.time() - start_time < timeout:
+        all_windows = gw.getAllWindows()
+        for window in all_windows:
+            if window.title:
+                for dialog_title in dialog_titles:
+                    if dialog_title.lower() in window.title.lower():
+                        print(f"Replacement dialog detected: '{window.title}'")
+                        return True
+        time.sleep(0.1)  # Check every 100ms
+    
+    return False
+
+
 def type_and_save_post(post):
     """Type the post content and save it as a file."""
     # Format the content
@@ -207,11 +230,7 @@ def type_and_save_post(post):
     # Save file - keep old file and automatically handle replacement popup
     filename = f"post_{post['id']}.txt"
     full_path = os.path.join(OUTPUT_DIR, filename)
-    
-    # Check if file exists to inform user
-    if os.path.exists(full_path):
-        print(f"File {filename} already exists. Replacement popup will be handled automatically.")
-    
+
     # Use Notepad save dialog - let Windows show replacement popup if file exists
     # Open save dialog
     pyautogui.hotkey('ctrl', 's')
@@ -222,24 +241,33 @@ def type_and_save_post(post):
     time.sleep(0.5)
     pyautogui.press('enter')
     time.sleep(0.8)  # Wait for replacement dialog to appear if file exists
+
+    # Check if replacement dialog appeared
+    dialog_appeared = check_replacement_dialog_appeared(timeout=1.5)
     
-    # Automatically handle Windows "File already exists" confirmation dialog
-    # The dialog asks: "Do you want to replace it?" with Yes/No buttons
-    # We automatically press 'y' (Yes) or Enter to confirm replacement
-    try:
-        # Wait a bit more to ensure dialog has appeared (if file exists)
-        time.sleep(0.3)
-        # Press 'y' to confirm replacement (works for Yes button)
-        pyautogui.press('y')
-        time.sleep(0.2)
-        print("Automatically confirmed file replacement")
-    except:
-        # If 'y' doesn't work, try Enter key (some dialogs use Enter as default)
+    if dialog_appeared:
+        # Automatically handle Windows "File already exists" confirmation dialog
+        # The dialog asks: "Do you want to replace it?" with Yes/No buttons
+        # We automatically press 'y' (Yes) or Enter to confirm replacement
+        print("Replacement dialog detected. Confirming replacement...")
         try:
             time.sleep(0.2)
-            pyautogui.press('enter')
+            # Press 'y' to confirm replacement (works for Yes button)
+            pyautogui.press('y')
+            time.sleep(0.2)
+            print("Automatically confirmed file replacement")
         except:
-            pass
+            # If 'y' doesn't work, try Enter key (some dialogs use Enter as default)
+            try:
+                time.sleep(0.2)
+                pyautogui.press('left')
+                time.sleep(0.2)
+                pyautogui.press('enter')
+                print("Confirmed replacement using Enter key")
+            except Exception as e:
+                print(f"Could not confirm replacement: {e}")
+    else:
+        print("No replacement dialog appeared. File saved directly (file doesn't exist yet).")
     
     time.sleep(0.5)
     
